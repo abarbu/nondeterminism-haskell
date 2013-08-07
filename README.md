@@ -7,7 +7,7 @@ transformer version, `AmbT`. Using this mechanism it builds up
 constraint satisfaction with different constraint types like arc
 consistency.
 
-# CSP
+## CSP
 
 A simple example which solves Sudoku puzzles, project Euler problem 96.
 
@@ -39,7 +39,7 @@ A simple example which solves Sudoku puzzles, project Euler problem 96.
 
     solveSudoku sudoku3
 
-# Amb
+## Amb
 
 An example which finds Pythagorean triplets up to a certain size, project Euler problem 9.
 
@@ -52,8 +52,9 @@ An example which finds Pythagorean triplets up to a certain size, project Euler 
 
     length $ allValues $ pyTriple 100000
 
-# Future
+## Future
 
+ - Docs!
  - Allow a randomized execution order for CSPs
  - CSPs don't need use IO internally. ST is enough.
  - Constraint synthesis. Already facilitated by the fact that
