@@ -1,0 +1,23 @@
+Name:                nondeterminism
+Version:             1.0
+Description:         Nondeterministic computations and constraint satisfaction
+License:             LGPL
+Author:              Andrei Barbu <andrei@0xab.com>
+category:            Control
+Build-Type:          Simple
+Cabal-Version:       >=1.2
+description:
+    A monad and monad transformer for nondeterministic computations
+    along with a CSP (constraint satisfaction problem) solver monad
+    implemented on top of it.
+
+source-repository head
+  type: git
+  location: git://github.com/abarbu/nondeterminism-haskell.git
+
+Library
+  Build-Depends:     base >= 3 && < 5, mtl >= 2, containers
+  Exposed-modules:
+                     Control.Monad.Amb
+                     Control.Monad.CSP
+  ghc-options:       -Wall
