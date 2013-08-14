@@ -52,12 +52,15 @@ import Data.Monoid
 -- computes Pythagorean triples of a certain size.
 --
 -- @
--- pyTriple :: (Num t, Ord t) => t -> Amb r (t, t, t)
--- pyTriple n = do a <- 'anIntegerBetween' 1 n
---                 b <- 'anIntegerBetween' (a + 1) n
---                 c <- 'anIntegerBetween' (b + 1) n
---                 when (a*a + b*b /= c*c) 'fail''
---                 return (a,b,c)
+--import Control.Monad
+--import Control.Monad.Amb
+--
+--pyTriple :: (Num t, Ord t) => t -> Amb r (t, t, t)
+--pyTriple n = do a <- 'anIntegerBetween' 1 n
+--                b <- 'anIntegerBetween' (a + 1) n
+--                c <- 'anIntegerBetween' (b + 1) n
+--                when (a*a + b*b /= c*c) 'fail''
+--                return (a,b,c)
 -- @
 --
 -- You can run this computation and ask for one or more of its
