@@ -35,7 +35,7 @@ module Control.Monad.Amb
          ambCC,
          forEffects,
          -- * Types
-         AmbT,
+         AmbT(..),
          AmbT',
          Amb,
          Amb'
