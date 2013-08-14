@@ -1,5 +1,7 @@
 # Nondeterminism
 
+This package is now available via Hackage, and is primarily documented there.
+
 This provides nondeterministic computations in Haskell. It implements
 an `Amb` monad in which you can perform nondeterministic choices along
 with a monad transformer version, `AmbT`.
