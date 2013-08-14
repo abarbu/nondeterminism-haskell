@@ -36,7 +36,8 @@ module Control.Monad.Amb
          AmbT(..),
          AmbT',
          Amb,
-         Amb'
+         Amb',
+         module Control.Applicative
        ) where
 import Control.Monad.Cont
 import Control.Monad.State.Lazy
