@@ -2,12 +2,15 @@ Name:                nondeterminism
 Version:             1.0
 Description:         Nondeterministic computations
 License:             LGPL
+License-file:        LICENSE
 Author:              Andrei Barbu <andrei@0xab.com>
-category:            Control
+Maintainer:          Andrei Barbu <andrei@0xab.com>
+Category:            Control, AI, Constraints, Failure, Monads
 Build-Type:          Simple
-Cabal-Version:       >=1.2
-description:
+cabal-version:       >= 1.6
+Synopsis:
     A monad and monad transformer for nondeterministic computations.
+extra-source-files:  README.md
 
 source-repository head
   type: git
