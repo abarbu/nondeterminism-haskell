@@ -16,11 +16,11 @@ An example which finds Pythagorean triplets up to a certain size, project Euler 
     pyTriple n = do a <- anIntegerBetween 1 n
                     b <- anIntegerBetween (a + 1) n
                     c <- anIntegerBetween (b + 1) n
-                    when (a*a + b*b /= c*c) fail'
+                    when (a*a + b*b /= c*c) empty
                     return (a,b,c)
 
     length $ allValues $ pyTriple 10000
 
 ## Future
 
- - Docs!
+ - allValues is not lazy in its return value

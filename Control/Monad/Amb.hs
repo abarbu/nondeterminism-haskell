@@ -15,8 +15,6 @@ module Control.Monad.Amb
          aSubsetOf,
          aMemberOf,
          aBoolean,
-         fail',
-         either',
          -- * Running computations
          isPossible,
          isPossibleT,
@@ -41,15 +39,20 @@ module Control.Monad.Amb
          Amb'
        ) where
 import Control.Monad.Cont
-import Control.Monad.State.Strict
+import Control.Monad.State.Lazy
 import Control.Monad.Identity
+import Control.Applicative
 import Data.Monoid
 
 -- $overview
 --
 -- A nondeterministic computation makes a series of choices which it
--- can then backtrack to. As an example, here is a program which
--- computes Pythagorean triples of a certain size.
+-- can then backtrack to. You can select between computations with
+-- '(<|>)' or 'mplus' and abort a line of computation with 'empty' or
+-- 'mzero'
+--
+-- As an example, here is a program which computes Pythagorean triples
+-- of a certain size.
 --
 -- @
 --import Control.Monad
@@ -59,7 +62,7 @@ import Data.Monoid
 --pyTriple n = do a <- 'anIntegerBetween' 1 n
 --                b <- 'anIntegerBetween' (a + 1) n
 --                c <- 'anIntegerBetween' (b + 1) n
---                when (a*a + b*b /= c*c) 'fail''
+--                when (a*a + b*b /= c*c) 'empty'
 --                return (a,b,c)
 -- @
 --
@@ -97,9 +100,24 @@ type Amb' a = AmbT' Identity a
 instance MonadTrans (AmbT r) where
     lift = AmbT . lift . lift . lift
 
-instance (Monad m) => Monad (AmbT r m) where
+instance Monad (AmbT r m) where
     AmbT a >>= b = AmbT $ a >>= unAmbT . b
     return = AmbT . return
+
+instance MonadPlus (AmbT r m) where
+  mzero = fail'
+  mplus = either'
+
+instance Functor (AmbT r m) where
+  fmap = liftM
+
+instance Applicative (AmbT r m) where
+  pure = return
+  (<*>) = ap
+
+instance Alternative (AmbT r m) where
+  (<|>) = either'
+  empty = fail'
 
 -- Internals
 
@@ -110,17 +128,17 @@ ambCC :: ((a -> AmbT r m a1) -> AmbT r m a) -> AmbT r m a
 ambCC f = AmbT $ callCC $ \k -> unAmbT $ f $ AmbT . k
 
 -- | Run the nondeterministic computation. This is internal.
-runAmbTI :: Monad m => AmbT a m a -> AmbT a m a -> m (a, [a])
+runAmbTI :: (Monad m) => AmbT a m a -> AmbT a m a -> m (a, [a])
 runAmbTI (AmbT a) i = runStateT (runContT (evalStateT a i) return) []
 
 -- | Run the nondeterministic computation. This is internal.
-runAmbT :: Monad m => AmbT t m t -> m (t, [t])
+runAmbT :: (Monad m) => AmbT t m t -> m (t, [t])
 runAmbT a = runAmbTI a (error "top-level fail")
 
 -- | When the nondeterministic computation backtracks past this state,
 -- execute this nondeterministic computation. Generally used to undo
 -- side effects.
-uponFailure :: Monad m => AmbT r m a -> AmbT r m ()
+uponFailure :: AmbT r m a -> AmbT r m ()
 uponFailure f = do
   old <- AmbT get
   AmbT $ put (f >> old)
@@ -132,13 +150,13 @@ tellState b = do
   put $ a `mappend` b
 
 -- | A helper to inject state into the backtracking stack
-tell' :: Monad m => [r] -> AmbT r m ()
+tell' :: (Monad m) => [r] -> AmbT r m ()
 tell' t = AmbT $ (lift $ lift $ tellState t)
 
 -- | A low-level internal function which executes a nondeterministic
 -- computation for its nondeterministic side-effects, such as its
 -- ability to produce different results.
-forEffects :: Monad m => ((t, [t]) -> r) -> (t1 -> AmbT t m t) -> AmbT t m t1 -> m r
+forEffects :: (Monad m) => ((t, [t]) -> r) -> (t1 -> AmbT t m t) -> AmbT t m t1 -> m r
 forEffects f g e = f `liftM` runAmbTI (do ambCC $ \k -> do
                                             AmbT $ put (k undefined)
                                             v <- e
@@ -149,8 +167,8 @@ forEffects f g e = f `liftM` runAmbTI (do ambCC $ \k -> do
 
 -- | Run a nondeterministic computation and return a result of that
 -- computation.
-oneValueT :: Monad m => AmbT b m b -> m b
-oneValueT c = runAmbT c >>= return . fst
+oneValueT :: (Monad m) => AmbT b m b -> m b
+oneValueT c = fst `liftM` runAmbT c
 
 -- | Run a nondeterministic computation and return a result of that
 -- computation.
@@ -160,8 +178,8 @@ oneValue = runIdentity . oneValueT
 -- | Run a nondeterministic computation and return a list of all
 -- results that the computation can produce. Note that this function
 -- is not lazy its result.
-allValuesT :: Monad m => AmbT t m t -> m [t]
-allValuesT = forEffects snd (\a -> tell' [a] >> fail')
+allValuesT :: (Monad m) => AmbT t m t -> m [t]
+allValuesT = forEffects snd (\a -> tell' [a] >> empty)
 
 -- | Run a nondeterministic computation and return a list of all
 -- results that the computation can produce. Note that this function
@@ -171,8 +189,8 @@ allValues = runIdentity . allValuesT
 
 -- | Run a nondeterministic computation and return @True@
 -- if any result is @True@, @False@ otherwise.
-isPossibleT :: Monad m => AmbT Bool m Bool -> m Bool
-isPossibleT = forEffects (([True] ==) . snd) (\a -> when (a == False) fail' >> tell' [True] >> return undefined)
+isPossibleT :: (Monad m) => AmbT Bool m Bool -> m Bool
+isPossibleT = forEffects (([True] ==) . snd) (\a -> when (a == False) empty >> tell' [True] >> return undefined)
 
 -- | Run a nondeterministic computation and return @True@
 -- if any result is @True@, @False@ otherwise.
@@ -181,8 +199,8 @@ isPossible = runIdentity . isPossibleT
 
 -- | Run a nondeterministic computation and return @True@
 -- if all possible results are @True@, @False@ otherwise.
-isNecessaryT :: Monad m => AmbT Bool m Bool -> m Bool
-isNecessaryT = forEffects (([] ==) . snd) (\a -> when (a == True) fail' >> tell' [True] >> return undefined)
+isNecessaryT :: (Monad m) => AmbT Bool m Bool -> m Bool
+isNecessaryT = forEffects (([] ==) . snd) (\a -> when (a == True) empty >> tell' [True] >> return undefined)
 
 -- | Run a nondeterministic computation and return @True@
 -- if all possible results are @True@, @False@ otherwise.
@@ -192,45 +210,45 @@ isNecessary = runIdentity . isNecessaryT
 -- Generate nondeterministic computations
 
 -- | Nondeterministically choose either of the two computations
-either' :: Monad m => AmbT r m b -> AmbT r m b -> AmbT r m b
+either' :: AmbT r m b -> AmbT r m b -> AmbT r m b
 either' a b = do r <- aBoolean
                  if r then a else b
 
 -- | Terminate this branch of the computation.
-fail' :: Monad m => AmbT r m b
-fail' = AmbT get >>= (\a -> a >> return undefined)
+fail' :: AmbT r m b
+fail' = AmbT get >>= (\a -> a >> undefined)
 
 -- | The most basic primitive that everything else is built out
 -- of. Generates @True@ and @False@.
-aBoolean :: Monad m => AmbT r m Bool
+aBoolean :: AmbT r m Bool
 aBoolean = ambCC $ \k -> do
              old <- AmbT get
              AmbT $ put (AmbT (put old) >> (k False) >> undefined)
              return True
 
 -- | Generate each element of the given list.
-aMemberOf :: Monad m => [b] -> AmbT r m b
-aMemberOf [] = fail'
-aMemberOf (x:xs) =  return x `either'` aMemberOf xs
+aMemberOf :: [b] -> AmbT r m b
+aMemberOf [] = empty
+aMemberOf (x:xs) =  return x <|> aMemberOf xs
 
 -- | Generate each subset of any size from the given list.
-aSubsetOf :: Monad m => [AmbT r m a] -> AmbT r m [a]
+aSubsetOf :: [AmbT r m a] -> AmbT r m [a]
 aSubsetOf [] = return []
-aSubsetOf (x:xs) = aSubsetOf xs `either'` liftM2 (:) x (aSubsetOf xs)
+aSubsetOf (x:xs) = aSubsetOf xs <|> liftM2 (:) x (aSubsetOf xs)
 
 -- | Generate all numbers between the given bounds, inclusive.
 anIntegerBetween :: (Monad m, Num b, Ord b) => b -> b -> AmbT r m b
-anIntegerBetween i j | i > j = fail'
+anIntegerBetween i j | i > j = empty
                      | otherwise = either' (return i) (anIntegerBetween (i + 1) j) 
 
 -- | Generate all splits of a list.
-aSplitOf :: Monad m => [a] -> AmbT r m ([a],[a])
+aSplitOf :: [a] -> AmbT r m ([a],[a])
 aSplitOf l = loop [] l
     where loop x [] = return (x,[])
           loop x y@(y0:ys)  = either' (return (x,y)) (loop (x ++ [y0]) ys)
 
 -- | Generate all permutations of a list.
-aPermutationOf :: Monad m => [a] -> AmbT r m [a]
+aPermutationOf :: [a] -> AmbT r m [a]
 aPermutationOf [] = return []
 aPermutationOf (l0:ls) = do (s1,s2) <- (aPermutationOf ls >>= aSplitOf)
                             return $ s1 ++ (l0:s2)
@@ -246,15 +264,15 @@ aPartitionOf (x:xs) = do y <- aPartitionOf xs
 -- | Generate all partitions of a given size of this list.
 aPartitionOfSize :: (Eq a, Monad m) => Int -> [a] -> AmbT r m [[a]]
 aPartitionOfSize 0 _ = error "Can't create a partition of size 0"
-aPartitionOfSize k l | length l < k = fail'
+aPartitionOfSize k l | length l < k = empty
                      | otherwise = loop l
     where loop x@(x0:xs) | length x == k = return $ map (:[]) x
                          | otherwise = do y <- loop xs
                                           z <- aMemberOf y
                                           return ((x0:z):filter (z /=) y)
-          loop [] = fail'
+          loop [] = empty
 
 -- | Just for fun. This is McCarthy's @amb@ operator and is a synonym
 -- for @aMemberOf@.
-amb :: Monad m => [b] -> AmbT r m b
+amb :: [b] -> AmbT r m b
 amb = aMemberOf
