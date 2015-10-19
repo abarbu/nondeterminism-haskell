@@ -1,5 +1,5 @@
 Name:                nondeterminism
-Version:             1.2
+Version:             1.3
 Description:         Nondeterministic computations
 License:             LGPL
 License-file:        LICENSE
@@ -21,6 +21,7 @@ Library
   Exposed-modules:   Control.Monad.Amb
   Hs-Source-Dirs:    src
   ghc-options:       -Wall
+  default-extensions: CPP
 
 test-suite AmbTests
   type:           exitcode-stdio-1.0

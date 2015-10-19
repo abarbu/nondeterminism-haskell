@@ -43,6 +43,9 @@ import Control.Monad.Cont
 import Control.Monad.State.Lazy
 import Control.Monad.Identity
 import Control.Applicative
+#if __GLASGOW_HASKELL__ < 709
+import Data.Monoid
+#endif
 
 -- $overview
 --
