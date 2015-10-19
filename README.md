@@ -1,5 +1,7 @@
 # Nondeterminism
 
+[![Build Status](http://circleci-badges-max.herokuapp.com/img/abarbu/nondeterminism-haskell/master?token=345e81d04c8b8609c50124632f8d1b594f476cb5)](https://circleci.com/gh/abarbu/nondeterminism-haskell/tree/master)
+
 This package is available via [Hackage where its documentation resides](https://hackage.haskell.org/package/nondeterminism).
 
 This provides nondeterministic computations in Haskell. It implements
