@@ -43,7 +43,6 @@ import Control.Monad.Cont
 import Control.Monad.State.Lazy
 import Control.Monad.Identity
 import Control.Applicative
-import Data.Monoid
 
 -- $overview
 --
